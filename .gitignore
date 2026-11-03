@@ -1,0 +1,41 @@
+# Secrets: the real API key lives here. Never commit it.
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Local data: indexed document text, saved chats, audit log, indexes
+.cache/
+*.db
+*.db-wal
+*.db-shm
+*.jsonl
+*.faiss
+
+# Private design files (they quote unpublished work)
+design/
+
+# User documents: keep real files out of the repo.
+uploads/
+data/
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+*.doc
+*.xls
+*.ppt
+# ...except small, made-up test fixtures, if any are ever added.
+!tests/fixtures/**
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/

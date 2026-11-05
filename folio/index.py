@@ -45,7 +45,8 @@ class Embedder:
         from sentence_transformers import SentenceTransformer
 
         self.name = model_name
-        self.model = SentenceTransformer(model_name)
+        # FOLIO_EMBED_DEVICE (e.g. "cpu") pins the device; unset lets sentence-transformers choose.
+        self.model = SentenceTransformer(model_name, device=os.environ.get("FOLIO_EMBED_DEVICE") or None)
         self.model.max_seq_length = min(512, self.model.max_seq_length or 512)
         self.query_prefix = "Represent this sentence for searching relevant passages: " if "bge" in model_name.lower() else ""
 

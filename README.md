@@ -135,11 +135,13 @@ use is unchanged when it's off.
 
 `.github/workflows/deploy-space.yml` runs the tests and pushes the app to the
 Hugging Face Space `docNahi/folio` on every push to `main`, using the
-`HF_TOKEN` repository secret. Only what the app needs is sent (`Dockerfile`,
-`server.py`, `folio/`, `static/`, `demo/`), with `README.space.md` as the
-Space's README. The `Dockerfile` installs CPU-only PyTorch, downloads the
-embedding model at build time and serves on port 7860 as uid 1000. `/health`
-reports whether the app is up.
+`HF_TOKEN` repository secret. Only what the app needs is sent (`app.py`,
+`server.py`, `folio/`, `static/`, `demo/`), with `requirements-space.txt` as the
+Space's `requirements.txt` (CPU-only PyTorch) and `README.space.md` as its
+README. The Space uses the free Gradio SDK: `app.py` starts the FastAPI app on
+port 7860, and `preload_from_hub` downloads the embedding model at build time.
+A `Dockerfile` is included too, for a Docker Space or any container host.
+`/health` reports whether the app is up.
 
 To run demo mode locally: `FOLIO_DEMO=1 FOLIO_COOKIE_SECURE=1 uvicorn server:app`
 and open http://localhost:8000 (browsers accept secure cookies on localhost).

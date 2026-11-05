@@ -1,5 +1,6 @@
-# Folio as a public demo on Hugging Face Spaces (Docker SDK).
-# Spaces runs the container as uid 1000 and routes traffic to app_port 7860.
+# Folio's public demo as a Docker image: for a Docker Space (paid on some accounts)
+# or any container host. The free Space uses the Gradio SDK and app.py instead.
+# Spaces runs containers as uid 1000 and routes traffic to port 7860.
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -12,8 +13,7 @@ WORKDIR /home/user/app
 
 # CPU-only PyTorch (the default wheel bundles ~2 GB of CUDA libraries a Space can't use).
 COPY requirements-space.txt .
-RUN pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.6.0" \
- && pip install -r requirements-space.txt
+RUN pip install -r requirements-space.txt
 
 USER user
 ENV HOME=/home/user \

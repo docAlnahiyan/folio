@@ -28,7 +28,8 @@ jobs:
       - name: Build the Space bundle (only what the app needs)
         run: |
           mkdir space
-          cp -r Dockerfile .dockerignore requirements-space.txt server.py folio static demo space/
+          cp -r app.py server.py folio static demo space/
+          cp requirements-space.txt space/requirements.txt
           cp README.space.md space/README.md
 
       - name: Push to Hugging Face

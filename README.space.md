@@ -3,9 +3,13 @@ title: Folio
 emoji: 📄
 colorFrom: red
 colorTo: gray
-sdk: docker
-app_port: 7860
+sdk: gradio
+sdk_version: 6.30.0
+python_version: "3.11"
+app_file: app.py
 pinned: false
+preload_from_hub:
+  - BAAI/bge-small-en-v1.5
 short_description: Ask documents anything. Cited, fact-checked answers.
 ---
 

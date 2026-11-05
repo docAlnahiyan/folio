@@ -11,17 +11,23 @@ for name, path in (("FOLIO_CACHE_DIR", "/tmp/folio/cache"), ("FOLIO_DB", "/tmp/f
                    ("FOLIO_AUDIT_LOG", "/tmp/folio/audit.jsonl")):
     os.environ.setdefault(name, path)
 
-if os.environ.get("SPACES_ZERO_GPU"):
-    # ZeroGPU hardware expects at least one GPU function; Folio runs on CPU, so this is never called.
-    # If the helper library can't load, carry on: the app itself doesn't need it.
-    try:
-        import spaces
+# Folio's embedding model runs on the CPU. On ZeroGPU, PyTorch reports a GPU in the main
+# process, which sentence-transformers would otherwise try to use.
+os.environ.setdefault("FOLIO_EMBED_DEVICE", "cpu")
 
-        @spaces.GPU
-        def _unused() -> None:
-            pass
-    except Exception as exc:  # noqa: BLE001
-        print(f"ZeroGPU helper unavailable, running on CPU only: {exc}", flush=True)
+if os.environ.get("SPACES_ZERO_GPU", "").lower() in ("1", "t", "true"):
+    # ZeroGPU hardware (the free tier here) requires at least one @spaces.GPU function,
+    # reported at startup. The `spaces` helper normally reports it when gr.Blocks.launch()
+    # runs; Folio serves its own FastAPI app, so it registers a placeholder (never
+    # called: Folio needs no GPU) and makes the same startup report itself.
+    # `spaces` must be imported before torch.
+    import spaces
+
+    @spaces.GPU
+    def _gpu_placeholder() -> None:
+        return None
+
+    spaces.zero.startup()
 
 import uvicorn  # noqa: E402
 

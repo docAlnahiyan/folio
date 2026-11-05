@@ -119,6 +119,7 @@ use is unchanged when it's off.
   demo is busy" card. Questions are limited to 1,000 characters and Fast mode
   is on by default.
 - **API key.** Only the `LLM_API_KEY` secret is used; the key field is hidden.
+- **Looks like the normal app.** There is no demo banner; visitors simply use Folio.
 - **Privacy.** The audit log stores a salted hash of the session id, never an
   IP address, and keeps entries for 7 days.
 

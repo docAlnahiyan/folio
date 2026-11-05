@@ -346,17 +346,7 @@ td.v .flag{display:inline-block;margin-left:5px;font-family:var(--sans);font-siz
   .meta .ib,.ib{min-width:36px;min-height:36px}
 }
 
-/* demo mode (FOLIO_DEMO=1): slim banner above the app; the app takes the rest of the height */
-body.demo{display:flex;flex-direction:column}
-body.demo .app{flex:1;min-height:0;height:auto}
-.demobar{display:flex;align-items:center;justify-content:center;gap:6px 16px;flex-wrap:wrap;padding:7px 14px;font-size:12.5px;line-height:1.4;color:var(--text-2);background:var(--panel);border-bottom:1px solid var(--border);text-align:center}
-.demobar[hidden]{display:none}
-.demobar b{color:var(--text);font-weight:600}
-.demobar-links{display:inline-flex;gap:14px}
-.demobar a{color:var(--accent-ink);text-decoration:none;font-weight:500}
-.demobar a:hover{text-decoration:underline;text-underline-offset:3px}
+/* demo mode (FOLIO_DEMO=1) */
 .callout.busy{border-color:var(--accent);background:var(--accent-soft)}
 .callout.busy .hd svg{color:var(--accent-ink)}
 .item .lock{width:13px;height:13px;color:var(--text-3);flex:none}
-@media (max-width:560px){.demobar{font-size:12px;padding:6px 10px}}
-.demobar .nowrap{white-space:nowrap}

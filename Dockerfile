@@ -13,7 +13,9 @@ WORKDIR /home/user/app
 
 # CPU-only PyTorch (the default wheel bundles ~2 GB of CUDA libraries a Space can't use).
 COPY requirements-space.txt .
-RUN pip install -r requirements-space.txt
+# CPU-only PyTorch first (the default wheel bundles ~2 GB of CUDA libraries); it satisfies the pin.
+RUN pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.8.0" \
+ && pip install -r requirements-space.txt
 
 USER user
 ENV HOME=/home/user \

@@ -1,0 +1,49 @@
+# Deploys the app to the Hugging Face Space on every push to main.
+# Needs the repository secret HF_TOKEN (a Hugging Face token with write access).
+# The Space id can be changed with the repository variable HF_SPACE.
+name: Deploy to Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-space
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HF_SPACE: ${{ vars.HF_SPACE || 'docNahi/folio' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the tests
+        run: |
+          python -m pip install --quiet faiss-cpu rank-bm25 fastapi python-multipart pypdf python-docx openpyxl python-pptx python-dotenv openai numpy pytest httpx
+          python -m pytest -q
+
+      - name: Build the Space bundle (only what the app needs)
+        run: |
+          mkdir space
+          cp -r app.py server.py folio static demo space/
+          cp requirements-space.txt space/requirements.txt
+          cp README.space.md space/README.md
+
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::Add the HF_TOKEN repository secret (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          cd space
+          git init --quiet --initial-branch=main
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit --quiet -m "Deploy ${GITHUB_SHA::7} from GitHub"
+          git push --force "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" main

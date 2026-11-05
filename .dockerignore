@@ -1,0 +1,12 @@
+.git
+.github
+.venv
+venv
+.cache
+__pycache__
+*.pyc
+.env
+tests
+streamlit_app.py
+rag.py
+README.space.md

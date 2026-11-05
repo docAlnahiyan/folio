@@ -27,7 +27,7 @@
   var OK = /\.(pdf|docx|txt|md|markdown|csv|xlsx|pptx)$/i;
 
   var state = {
-    docs: [], uploads: [], ready: false, serverKey: false, apiKey: "",
+    docs: [], uploads: [], ready: false, serverKey: false, apiKey: "", demo: null,
     models: [], model: "", scope: null, chat: null, chats: [], busy: null,
     k: 4, fast: false, query: ""
   };
@@ -134,7 +134,8 @@
         el.className = "item";
         right = '<span class="ct" title="' + plural(d.chunks, "passage") + '">' + d.chunks + '</span>';
       }
-      var removable = !d.uid || d.state === "error";
+      var removable = (!d.uid && !d.readonly) || d.state === "error";
+      if (d.readonly) right += '<span class="sr"> (sample document)</span>';
       el.innerHTML = ICON.file + '<span class="nm" title="' + esc(d.name) + '">' + esc(d.name) + '</span>' + right +
         (removable ? '<button class="x" type="button" aria-label="' + (d.uid ? "Dismiss " : "Remove ") + esc(d.name) + '">' + ICON.x + '</button>' : "") + extra;
       if (removable) el.querySelector(".x").onclick = function () { d.uid ? dismissUpload(d) : removeDoc(d); };
@@ -575,7 +576,8 @@
       "</div><ul>" + bad.map(function (x) { return "<li>" + esc(x.claim) + "</li>"; }).join("") + "</ul><p>Check these against the documents before relying on them.</p></div>";
   }
 
-  var ERR_TITLE = { missing_key: "Add an API key to get answers", bad_key: "That API key didn't work", rate_limited: "Rate limit reached",
+  var ERR_TITLE = { demo_busy: "Lots of questions right now", too_long: "That question is a bit long", demo_unconfigured: "The demo is resting",
+    missing_key: "Add an API key to get answers", bad_key: "That API key didn't work", rate_limited: "Rate limit reached",
     no_docs: "No documents yet", bad_model: "That model isn't available", unreachable: "Can't reach the model provider", network: "Connection lost" };
   function renderError(t) {
     var e = t.error, box = slot(t, "err");
@@ -585,7 +587,9 @@
     if (e.code === "rate_limited" && !state.fast) acts.push(["fast", "Turn on Fast mode"]);
     if (e.code === "no_docs") acts.push(["add", "Add files"]);
     if (e.code !== "no_docs" && t.live) acts.push(["retry", "Try again"]);
-    box.innerHTML = '<div class="callout err" role="alert"><div class="hd">' + ICON.warn + esc(ERR_TITLE[e.code] || "Couldn't answer") + "</div><p>" + esc(e.message || "Something went wrong.") +
+    var friendly = e.code === "demo_busy" || e.code === "too_long" || e.code === "demo_unconfigured";
+    if (friendly) acts = acts.filter(function (a) { return a[0] !== "retry"; });
+    box.innerHTML = '<div class="callout ' + (friendly ? "busy" : "err") + '" role="' + (friendly ? "status" : "alert") + '"><div class="hd">' + ICON.warn + esc(ERR_TITLE[e.code] || "Couldn't answer") + "</div><p>" + esc(e.message || "Something went wrong.") +
       "</p>" + (acts.length ? '<div class="acts">' + acts.map(function (a) { return '<button type="button" class="btn" data-act="' + a[0] + '">' + a[1] + "</button>"; }).join("") + "</div>" : "") + "</div>";
   }
 
@@ -897,10 +901,26 @@
   document.addEventListener("visibilitychange", function () { if (!document.hidden && !$("empty").hidden) startSig(); });
   reduce.addEventListener("change", startSig);
 
+  /* ------------------------------------------------------------ demo mode (public demo on Hugging Face) */
+  function applyDemo(d) {
+    var first = !state.demo;
+    state.demo = d;
+    if (!first) return;
+    document.body.classList.add("demo");
+    $("demo-author").textContent = d.author;
+    $("demo-back").href = d.portfolio_url;
+    $("demo-code").href = d.repo_url;
+    $("demobar").hidden = false;
+    $("ta").maxLength = d.max_question;
+    // Fast mode is on by default in the demo (keeps the shared quota going), unless the visitor chose otherwise.
+    if (load("fast") === null) state.fast = true;
+  }
+
   /* ------------------------------------------------------------ boot */
   function refreshState() {
     return api("/api/state").then(function (s) {
       state.serverKey = !!s.server_key;
+      if (s.demo) applyDemo(s.demo);
       if (s.user) { $("who").textContent = s.user.name; $("av").textContent = s.user.initial; }
       applyDocs(s);
       return s;

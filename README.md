@@ -137,7 +137,7 @@ use is unchanged when it's off.
 Hugging Face Space `docNahi/folio` on every push to `main`, using the
 `HF_TOKEN` repository secret. Only what the app needs is sent (`app.py`,
 `server.py`, `folio/`, `static/`, `demo/`), with `requirements-space.txt` as the
-Space's `requirements.txt` (CPU-only PyTorch) and `README.space.md` as its
+Space's `requirements.txt` (PyTorch pinned to a ZeroGPU-supported version) and `README.space.md` as its
 README. The Space uses the free Gradio SDK: `app.py` starts the FastAPI app on
 port 7860, and `preload_from_hub` downloads the embedding model at build time.
 A `Dockerfile` is included too, for a Docker Space or any container host.

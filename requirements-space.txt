@@ -1,8 +1,8 @@
 # Runtime dependencies for the Hugging Face Space. The deploy workflow ships this
-# file as the Space's requirements.txt. PyTorch comes from its CPU index, so the
-# Space skips ~2 GB of CUDA libraries it can't use.
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.6.0+cpu
+# file as the Space's requirements.txt. ZeroGPU hardware only accepts certain
+# PyTorch versions (2.8.0 to 2.13.0 at the time of writing), so torch is pinned
+# to one of them.
+torch==2.8.0
 pypdf>=5.1
 sentence-transformers>=3.3
 faiss-cpu>=1.9

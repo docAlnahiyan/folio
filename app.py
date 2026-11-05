@@ -13,11 +13,15 @@ for name, path in (("FOLIO_CACHE_DIR", "/tmp/folio/cache"), ("FOLIO_DB", "/tmp/f
 
 if os.environ.get("SPACES_ZERO_GPU"):
     # ZeroGPU hardware expects at least one GPU function; Folio runs on CPU, so this is never called.
-    import spaces
+    # If the helper library can't load, carry on: the app itself doesn't need it.
+    try:
+        import spaces
 
-    @spaces.GPU
-    def _unused() -> None:
-        pass
+        @spaces.GPU
+        def _unused() -> None:
+            pass
+    except Exception as exc:  # noqa: BLE001
+        print(f"ZeroGPU helper unavailable, running on CPU only: {exc}", flush=True)
 
 import uvicorn  # noqa: E402
 

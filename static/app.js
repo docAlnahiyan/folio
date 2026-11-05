@@ -906,11 +906,6 @@
     var first = !state.demo;
     state.demo = d;
     if (!first) return;
-    document.body.classList.add("demo");
-    $("demo-author").textContent = d.author;
-    $("demo-back").href = d.portfolio_url;
-    $("demo-code").href = d.repo_url;
-    $("demobar").hidden = false;
     $("ta").maxLength = d.max_question;
     // Fast mode is on by default in the demo (keeps the shared quota going), unless the visitor chose otherwise.
     if (load("fast") === null) state.fast = true;

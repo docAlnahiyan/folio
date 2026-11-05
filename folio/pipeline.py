@@ -426,6 +426,7 @@ class Request:
     fast: bool = False
     doc: str | None = None  # explicit scope from the document picker
     chat_id: str = ""
+    session: str = ""  # demo only: salted hash of the visitor's session id, never an address
     api_key: str = field(default="", repr=False)
 
 
@@ -449,6 +450,8 @@ def run(kb: KnowledgeBase, kb_lock: threading.Lock, req: Request, history: list[
     turns = list(history or [])
     record = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "chat": req.chat_id, "question": req.question,
               "model": model, "fast": req.fast, "k": req.k}
+    if req.session:
+        record["session"] = req.session
 
     def step(sid: str, label: str, state: str = "active") -> dict:
         return {"type": "step", "id": sid, "label": label, "state": state}

@@ -3,6 +3,10 @@
 Each assistant message stores a JSON payload with everything the UI needs to
 re-render the answer exactly: passages, citations, claim check, conflicts, gap
 report, table, confidence, model and timing.
+
+Chats have an `owner`. Locally it is always "" (one user). In demo mode it is the
+visitor's session id, and every read or write is scoped to it, so visitors only
+ever see their own chats.
 """
 
 from __future__ import annotations
@@ -33,6 +37,8 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX IF NOT EXISTS messages_chat ON messages(chat_id, id);
 CREATE INDEX IF NOT EXISTS chats_updated ON chats(updated_at DESC);
 """
+# Added after the first release; existing databases get the column on open.
+_MIGRATIONS = ["ALTER TABLE chats ADD COLUMN owner TEXT NOT NULL DEFAULT ''"]
 
 TITLE_MAX = 40
 _FILLER = re.compile(r"^(please|hey|hi|ok(ay)?|so|can you|could you|would you|i want to know|tell me)\b[\s,]*", re.IGNORECASE)
@@ -72,41 +78,47 @@ class ChatStore:
         self._db.execute("PRAGMA foreign_keys = ON")
         self._db.execute("PRAGMA journal_mode = WAL")
         self._db.executescript(SCHEMA)
+        cols = {r["name"] for r in self._db.execute("PRAGMA table_info(chats)")}
+        if "owner" not in cols:
+            for sql in _MIGRATIONS:
+                self._db.execute(sql)
+        self._db.execute("CREATE INDEX IF NOT EXISTS chats_owner ON chats(owner, updated_at DESC)")
 
     def close(self) -> None:
         with self._lock:
             self._db.close()
 
     # --- chats ---------------------------------------------------------------
-    def create(self, title: str) -> dict:
+    def create(self, title: str, owner: str = "") -> dict:
         now = time.time()
         chat = {"id": uuid.uuid4().hex[:16], "title": title, "created_at": now, "updated_at": now}
         with self._lock:
-            self._db.execute("INSERT INTO chats (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
-                             (chat["id"], chat["title"], now, now))
+            self._db.execute("INSERT INTO chats (id, title, created_at, updated_at, owner) VALUES (?, ?, ?, ?, ?)",
+                             (chat["id"], chat["title"], now, now, owner))
         return chat
 
-    def get(self, chat_id: str) -> dict | None:
+    def get(self, chat_id: str, owner: str = "") -> dict | None:
         with self._lock:
-            row = self._db.execute("SELECT * FROM chats WHERE id = ?", (chat_id,)).fetchone()
+            row = self._db.execute("SELECT id, title, created_at, updated_at FROM chats WHERE id = ? AND owner = ?",
+                                   (chat_id, owner)).fetchone()
         return dict(row) if row else None
 
-    def list(self, query: str = "", limit: int = 200) -> list[dict]:
-        sql, args = "SELECT * FROM chats", []
+    def list(self, query: str = "", limit: int = 200, owner: str = "") -> list[dict]:
+        sql, args = "SELECT id, title, created_at, updated_at FROM chats WHERE owner = ?", [owner]
         if query.strip():
             # Match titles or anything said in the chat.
-            sql += (" WHERE title LIKE ? ESCAPE '\\' OR id IN "
-                    "(SELECT chat_id FROM messages WHERE content LIKE ? ESCAPE '\\')")
+            sql += (" AND (title LIKE ? ESCAPE '\\' OR id IN "
+                    "(SELECT chat_id FROM messages WHERE content LIKE ? ESCAPE '\\'))")
             like = "%" + re.sub(r"([%_\\])", r"\\\1", query.strip()) + "%"
-            args = [like, like]
+            args += [like, like]
         sql += " ORDER BY updated_at DESC LIMIT ?"
         with self._lock:
             return [dict(r) for r in self._db.execute(sql, [*args, limit]).fetchall()]
 
-    def rename(self, chat_id: str, title: str) -> dict | None:
+    def rename(self, chat_id: str, title: str, owner: str = "") -> dict | None:
         with self._lock:
-            cur = self._db.execute("UPDATE chats SET title = ? WHERE id = ?", (title, chat_id))
-        return self.get(chat_id) if cur.rowcount else None
+            cur = self._db.execute("UPDATE chats SET title = ? WHERE id = ? AND owner = ?", (title, chat_id, owner))
+        return self.get(chat_id, owner) if cur.rowcount else None
 
     def set_title_if(self, chat_id: str, expected: str, title: str) -> bool:
         """Replace the title only if it is still `expected` (i.e. the user hasn't renamed it)."""
@@ -114,10 +126,18 @@ class ChatStore:
             cur = self._db.execute("UPDATE chats SET title = ? WHERE id = ? AND title = ?", (title, chat_id, expected))
         return bool(cur.rowcount)
 
-    def delete(self, chat_id: str) -> bool:
+    def delete(self, chat_id: str, owner: str = "") -> bool:
         with self._lock:
-            cur = self._db.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
+            cur = self._db.execute("DELETE FROM chats WHERE id = ? AND owner = ?", (chat_id, owner))
         return bool(cur.rowcount)
+
+    def delete_owner(self, owner: str) -> int:
+        """Delete every chat of one owner (demo: a visitor whose session expired)."""
+        if not owner:
+            return 0  # never wipe local chats
+        with self._lock:
+            cur = self._db.execute("DELETE FROM chats WHERE owner = ?", (owner,))
+        return cur.rowcount
 
     # --- messages ------------------------------------------------------------
     def add_message(self, chat_id: str, role: str, content: str, payload: dict | None = None) -> int:

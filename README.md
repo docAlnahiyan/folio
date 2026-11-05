@@ -14,6 +14,16 @@ Documents are parsed and embedded locally; only the question and the
 retrieved passages are sent to the language model (Groq's free API by
 default, or a local Ollama model for fully offline use).
 
+## Live demo
+
+Try it at **https://docnahi-folio.hf.space** (a Hugging Face Space). It runs on
+sample documents: my public CV, publications, research, projects and blog, so
+you can ask things like "What did the IARCE 2024 Best Paper find?". You can also
+upload up to 3 files of your own.
+
+The free Space sleeps after about two days without visitors; the first visit
+after that takes a minute or two while it wakes up.
+
 ## Key features
 
 - **Cited answers.** Every factual sentence carries a numbered citation.
@@ -90,6 +100,49 @@ The suite runs offline in about a second, using a fake embedder and a mocked
 language model. It covers chunking, every file loader and its error cases,
 retrieval and document scoping, rank fusion, the JSON parsing and fallbacks
 of the answer pipeline, the chat database and the chat API.
+
+## Demo mode
+
+`FOLIO_DEMO=1` turns Folio into a public demo (that's how the Space runs). Local
+use is unchanged when it's off.
+
+- **Sample documents.** Every file in `demo/` is indexed at startup into a
+  shared, read-only index. `demo/suggestions.json` holds the starter questions.
+- **Private visitors.** Each visitor gets an anonymous session in a secure,
+  HttpOnly cookie. Chats, uploads and the document picker are scoped to it; a
+  visitor never sees another visitor's chats or files.
+- **Uploads.** Up to 3 files of 5 MB each, private to the session, kept in a
+  temp folder and never added to the shared index. They are deleted, with the
+  visitor's chats, after 60 minutes of inactivity.
+- **Rate limits** protect the API quota: 8 questions per visitor per hour and a
+  daily cap for everyone (300 by default). Hitting one shows a friendly "The
+  demo is busy" card. Questions are limited to 1,000 characters and Fast mode
+  is on by default.
+- **API key.** Only the `LLM_API_KEY` secret is used; the key field is hidden.
+- **Privacy.** The audit log stores a salted hash of the session id, never an
+  IP address, and keeps entries for 7 days.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `FOLIO_DEMO` | off | `1` turns demo mode on |
+| `FOLIO_DEMO_PER_HOUR` | `8` | questions per visitor per hour |
+| `FOLIO_DEMO_DAILY_CAP` | `300` | questions per day, all visitors |
+| `FOLIO_DEMO_MAX_UPLOADS` | `3` | files per visitor |
+| `FOLIO_DEMO_MAX_UPLOAD_MB` | `5` | size limit per file |
+| `FOLIO_DEMO_SESSION_TTL` | `3600` | seconds of inactivity before a visitor's data is deleted |
+
+### Deployment
+
+`.github/workflows/deploy-space.yml` runs the tests and pushes the app to the
+Hugging Face Space `docNahi/folio` on every push to `main`, using the
+`HF_TOKEN` repository secret. Only what the app needs is sent (`Dockerfile`,
+`server.py`, `folio/`, `static/`, `demo/`), with `README.space.md` as the
+Space's README. The `Dockerfile` installs CPU-only PyTorch, downloads the
+embedding model at build time and serves on port 7860 as uid 1000. `/health`
+reports whether the app is up.
+
+To run demo mode locally: `FOLIO_DEMO=1 FOLIO_COOKIE_SECURE=1 uvicorn server:app`
+and open http://localhost:8000 (browsers accept secure cookies on localhost).
 
 ## Architecture
 

@@ -1,0 +1,15 @@
+# Runtime dependencies for the Hugging Face Space (Dockerfile). torch is installed
+# separately from PyTorch's CPU index first, so the image skips the CUDA libraries.
+pypdf>=5.1
+sentence-transformers>=3.3
+faiss-cpu>=1.9
+openai>=1.57
+numpy>=1.26
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+rank-bm25>=0.2.2
+python-docx>=1.1
+openpyxl>=3.1
+python-pptx>=1.0
+python-dotenv>=1.0

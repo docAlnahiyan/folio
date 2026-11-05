@@ -38,3 +38,21 @@ MAX_FILE_BYTES = 50 * 1024 * 1024
 
 def has_server_key() -> bool:
     return bool(LLM_API_KEY)
+
+
+# --- Public demo mode (FOLIO_DEMO=1), e.g. on Hugging Face Spaces -------------------------
+# Off by default: local use is unchanged. See README "Live demo".
+DEMO = os.environ.get("FOLIO_DEMO", "") == "1"
+DEMO_DIR = Path(os.environ.get("FOLIO_DEMO_DIR", ROOT / "demo"))
+DEMO_PER_HOUR = int(os.environ.get("FOLIO_DEMO_PER_HOUR", "8"))  # questions per visitor per hour
+DEMO_DAILY_CAP = int(os.environ.get("FOLIO_DEMO_DAILY_CAP", "300"))  # questions per day, all visitors
+DEMO_MAX_UPLOADS = int(os.environ.get("FOLIO_DEMO_MAX_UPLOADS", "3"))  # files per visitor
+DEMO_MAX_UPLOAD_BYTES = int(os.environ.get("FOLIO_DEMO_MAX_UPLOAD_MB", "5")) * 1024 * 1024
+DEMO_SESSION_TTL = int(os.environ.get("FOLIO_DEMO_SESSION_TTL", "3600"))  # seconds of inactivity
+DEMO_MAX_QUESTION = 1000  # characters
+AUDIT_RETENTION_DAYS = 7  # demo only: older audit entries are pruned
+# Secure cookies need HTTPS (Spaces, or localhost in browsers). Tests over plain HTTP turn it off.
+COOKIE_SECURE = os.environ.get("FOLIO_COOKIE_SECURE", "1") != "0"
+PORTFOLIO_URL = os.environ.get("FOLIO_PORTFOLIO_URL", "https://docalnahiyan.github.io")
+REPO_URL = os.environ.get("FOLIO_REPO_URL", "https://github.com/docAlnahiyan/folio")
+DEMO_AUTHOR = os.environ.get("FOLIO_DEMO_AUTHOR", "Al-Nahiyan Khushbu")
